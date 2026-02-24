@@ -227,15 +227,20 @@ end
 --[[ ANIMATORS ]]
 local TweensHandler = {}
 local function CreateTween(obj, info, props)
+	if not obj or not obj.Parent then return end
 	if not TweensHandler[obj] then
 		TweensHandler[obj] = {}
 	end
 
 	for propertyName, _ in pairs(props) do
-		if TweensHandler[obj][propertyName] then
-			TweensHandler[obj][propertyName]:Cancel()
-			TweensHandler[obj][propertyName]:Destroy()
+		local existingTween = TweensHandler[obj] and TweensHandler[obj][propertyName]
+		if typeof(existingTween) == "Instance" then
+			if existingTween.PlaybackState == Enum.PlaybackState.Playing then
+				existingTween:Cancel()
+			end
+			existingTween:Destroy()
 		end
+		TweensHandler[obj][propertyName] = nil
 	end
 
 	local tween = TweenService:Create(obj, info, props)
@@ -429,6 +434,12 @@ local function CreateAnimatedList(parent: Instance, axis: string?, padding: UDim
 	local function update()
 		if updating then return end
 		updating = true
+		
+		if not parent or not parent.Parent then
+			updating = false
+			return
+		end
+		
 		updateLayoutOrder()
 		local children = {}
 		for _, c in ipairs(parent:GetChildren()) do
